@@ -53,7 +53,7 @@ BO_ 118 RPM_RELATED: 8 XXX
 BO_ 514 ENGINE_DATA: 8 XXX
  SG_ CHKSUM : 63|8@0+ (1,0) [0|127] "" XXX
  SG_ RPM : 7|16@0+ (0.25,0) [0|8500] "rpm" XXX
- SG_ SPEED : 23|16@0+ (0.01,0) [0|32767] "kph" XXX
+ SG_ SPEED : 23|16@0+ (1,0) [0|32767] "kph" XXX
  SG_ PEDAL_GAS : 39|12@0+ (1,0) [0|255] "%" XXX
 
 BO_ 357 PEDALS: 8 XXX
@@ -71,10 +71,10 @@ BO_ 357 PEDALS: 8 XXX
  SG_ GEAR : 48|5@1+ (1,0) [0|255] "" XXX
 
 BO_ 533 WHEEL_SPEEDS: 8 XXX
- SG_ FL : 7|16@0+ (0.01,-100) [0|16383] "kph" XXX
- SG_ FR : 23|16@0+ (0.01,-100) [0|65535] "kph" XXX
- SG_ RL : 39|16@0+ (0.01,-100) [0|15] "kph" XXX
- SG_ RR : 55|16@0+ (0.01,-100) [0|65535] "kph" XXX
+ SG_ FL : 7|16@0+ (1,0) [0|16383] "kph" XXX
+ SG_ FR : 23|16@0+ (1,0) [0|65535] "kph" XXX
+ SG_ RL : 39|16@0+ (1,0) [0|15] "kph" XXX
+ SG_ RR : 55|16@0+ (1,0) [0|65535] "kph" XXX
 
 BO_ 134 STEER2: 8 XXX
  SG_ CTR : 22|4@0+ (1,0) [0|7] "" XXX
