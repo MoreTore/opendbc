@@ -261,7 +261,7 @@ BO_ 540 CRZ_CTRL: 8 XXX
  SG_ NEW_SIGNAL_5 : 42|6@0+ (1,0) [0|3] "" XXX
  SG_ DISABLE_TIMER_1 : 43|3@1+ (1,0) [0|7] "" XXX
  SG_ DISABLE_TIMER_2 : 48|1@0+ (1,0) [0|1] "" XXX
- SG_ NEW_SIGNAL_6 : 49|3@1+ (1,0) [0|3] "" XXX
+ SG_ CRZ_ACTIVE_1_EDGE : 49|2@1+ (1,0) [0|3] "" XXX
  SG_ ACC_ACTIVE_2 : 52|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_4 : 63|8@0+ (1,0) [0|3] "" XXX
 
