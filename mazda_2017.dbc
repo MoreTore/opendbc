@@ -143,9 +143,9 @@ BO_ 305 NEW_MSG_6: 8 XXX
  SG_ NEW_SIGNAL_3 : 10|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 357 PEDALS: 8 XXX
+ SG_ CRZ_AVAILABLE : 1|1@0+ (1,0) [0|1] "" XXX
  SG_ ACC_OFF : 2|1@1+ (1,0) [0|15] "" XXX
  SG_ ACC_ACTIVE : 3|1@0+ (1,0) [0|1] "" XXX
- SG_ BRAKE_ON : 4|1@0+ (1,0) [0|1] "" XXX
  SG_ NO_BRAKE : 6|1@0+ (1,0) [0|7] "" XXX
  SG_ BRAKE_ON_2 : 7|1@1+ (1,0) [0|255] "" XXX
  SG_ NEW_SIGNAL_7 : 8|3@1+ (1,0) [0|7] "" XXX
@@ -707,7 +707,6 @@ BO_ 1479 NEW_MSG_470: 8 XXX
 
 CM_ SG_ 120 VEHICLE_ACC_X "Vehicle acceleration of X-axis wrt. NED frame.";
 CM_ SG_ 120 VEHICLE_ACC_Y "Vehicle acceleration of Y-axis wrt. NED frame.";
-CM_ SG_ 157 CAN_OFF "Disengage Cruise if enabled, if already disabled  TURN it OFF";
 CM_ SG_ 357 GEAR "13P, 26R, 13N, 24D";
 CM_ SG_ 540 DISTANCE_SETTING "Radar distance 0: disabled, 1: 4 bars, 2: 3 bars, 3: 2 bars, 4: 1 bar";
 CM_ SG_ 552 GEAR "0 Shifting, 1 P, 2 R, 3 N, 4 D";
