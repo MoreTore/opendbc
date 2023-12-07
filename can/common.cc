@@ -82,6 +82,9 @@ unsigned int mazda2019_checksum(uint32_t address, const Signal &sig, const std::
 
 unsigned int mazda2017_checksum(uint32_t address, const Signal &sig, const std::vector<uint8_t> &d) {
     uint8_t sum = 0;
+    if (d[5] & 0x5) {
+      sum = 0xFC;
+    }
     for (int i = 0; i < d.size() - 1; i++) {
         sum += d[i];
     }
