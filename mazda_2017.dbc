@@ -147,6 +147,7 @@ BO_ 357 PEDALS: 8 XXX
  SG_ ACC_OFF : 2|1@1+ (1,0) [0|15] "" XXX
  SG_ ACC_ACTIVE : 3|1@0+ (1,0) [0|1] "" XXX
  SG_ NO_BRAKE : 6|1@0+ (1,0) [0|7] "" XXX
+ SG_ BRAKE_ON : 4|1@0+ (1,0) [0|1] "" XXX
  SG_ BRAKE_ON_2 : 7|1@1+ (1,0) [0|255] "" XXX
  SG_ NEW_SIGNAL_7 : 8|3@1+ (1,0) [0|7] "" XXX
  SG_ NO_BRAKE_2 : 15|1@0+ (1,0) [0|7] "" XXX
