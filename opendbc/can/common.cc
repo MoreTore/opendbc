@@ -257,3 +257,29 @@ unsigned int fca_giorgio_checksum(uint32_t address, const Signal &sig, const std
   }
 
 }
+
+unsigned int mazda2019_checksum(uint32_t address, const Signal &sig, const std::vector<uint8_t> &d) {
+  uint8_t checksum = 0;
+  if (address == 0x220U) {
+    checksum = 0x2aU;
+  }
+  if (address == 0x249U) {
+    checksum = 0x53U;
+  }
+  // Simple XOR over the payload, except for the byte where the checksum lives.
+  for (int i = 0; i < 7; i++) {
+    checksum += d[i];
+  }
+  return checksum;
+}
+
+unsigned int mazda2017_checksum(uint32_t address, const Signal &sig, const std::vector<uint8_t> &d) {
+  uint8_t sum = 0;
+  if (d[5] & 0x5) {
+    sum = 0xFC;
+  }
+  for (int i = 0; i < d.size() - 1; i++) {
+    sum += d[i];
+  }
+  return ~sum & 0xFF;
+}
