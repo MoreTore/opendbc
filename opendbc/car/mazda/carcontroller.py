@@ -102,7 +102,7 @@ class CarController(CarControllerBase):
           can_sends.extend(mazdacan.create_radar_command(self.packer, self.frame, CC.longActive, CS, hold))
 
     elif self.CP.flags & MazdaFlags.GEN2:
-      raw_acc_output = (CC.actuators.accel * 240) + 2000
+      raw_acc_output = (CC.actuators.accel * 200) + 2000
       if CC.longActive and self.CP.openpilotLongitudinalControl:
         if self.params.get_bool("BlendedACC"):
           if not self.long_active_last:
