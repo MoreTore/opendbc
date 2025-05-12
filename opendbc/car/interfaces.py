@@ -17,6 +17,7 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.simple_kalman import KF1D, get_kalman_gain
 from opendbc.car.values import PLATFORMS
 from opendbc.can.parser import CANParser
+from openpilot.common.params import Params
 
 GearShifter = structs.CarState.GearShifter
 ButtonType = structs.CarState.ButtonEvent.Type
@@ -111,6 +112,7 @@ class CarInterfaceBase(ABC):
 
   def __init__(self, CP: structs.CarParams):
     self.CP = CP
+    self.params = Params()
 
     self.frame = 0
     self.v_ego_cluster_seen = False
@@ -231,9 +233,9 @@ class CarInterfaceBase(ABC):
 
     tune.init('torque')
     tune.torque.useSteeringAngle = use_steering_angle
-    tune.torque.kp = 1.0
+    tune.torque.kp = 0
     tune.torque.kf = 1.0
-    tune.torque.ki = 0.1
+    tune.torque.ki = 0
     tune.torque.friction = params['FRICTION']
     tune.torque.latAccelFactor = params['LAT_ACCEL_FACTOR']
     tune.torque.latAccelOffset = 0.0
