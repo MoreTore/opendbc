@@ -11,7 +11,7 @@ from openpilot.common.params import Params
 from opendbc.car import get_friction
 
 NON_LINEAR_TORQUE_PARAMS = {
-  CAR.MAZDA_3_2019: (3.8818, 0.8, 0.2, 0.3605),
+  CAR.MAZDA_3_2019: (4.1, 1.2, 0.1, 0.3605),
 }
 
 class CarInterface(CarInterfaceBase):
@@ -38,7 +38,7 @@ class CarInterface(CarInterfaceBase):
     assert non_linear_torque_params, "The params are not defined"
     a, b, c = float(self.params.get("a", encoding='utf-8')), float(self.params.get("b", encoding='utf-8')), float(self.params.get("c", encoding='utf-8'))
     steer_torque = (sig(latcontrol_inputs.lateral_acceleration * a) * b) + (latcontrol_inputs.lateral_acceleration * c)
-    return float(steer_torque) + friction
+    return float(steer_torque) + friction + torque_params.latAccelOffset
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
     if self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
@@ -77,6 +77,7 @@ class CarInterface(CarInterfaceBase):
       if p.get_bool("TorqueInterceptorEnabled"): # Torque Interceptor Installed
         ret.flags |= MazdaFlags.TORQUE_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.TORQUE_INTERCEPTOR.value
+        ret.steerAtStandstill = True
       if p.get_bool("RadarInterceptorEnabled"): # Radar Interceptor Installed
         ret.flags |= MazdaFlags.RADAR_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.RADAR_INTERCEPTOR.value
@@ -111,5 +112,6 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.1, 0.1]
       ret.startingState = True
       ret.steerActuatorDelay = 0.1
+      ret.steerAtStandstill = True
 
     return ret
