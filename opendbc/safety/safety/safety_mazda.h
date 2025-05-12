@@ -148,9 +148,9 @@ static bool mazda_tx_hook(const CANPacket_t *to_send) {
 
   const TorqueSteeringLimits MAZDA_2019_STEERING_LIMITS = {
     .max_torque = 8000,
-    .max_rate_up = 45,
-    .max_rate_down = 80,
-    .max_rt_delta = 1688,  // (45*100hz*250000/1000000)*1.5
+    .max_rate_up = 8000,
+    .max_rate_down = 8000,
+    .max_rt_delta = 3000000,  // (45*100hz*250000/1000000)*1.5
     .driver_torque_multiplier = 1,
     .driver_torque_allowance = 1400,
     .type = TorqueDriverLimited,
