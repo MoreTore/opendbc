@@ -38,7 +38,7 @@ class CarInterface(CarInterfaceBase):
     assert non_linear_torque_params, "The params are not defined"
     a, b, c, _ = non_linear_torque_params
     steer_torque = (sig(latcontrol_inputs.lateral_acceleration * a) * b) + (latcontrol_inputs.lateral_acceleration * c)
-    return float(steer_torque) + friction
+    return float(steer_torque) + friction + torque_params.latAccelOffset
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
     if self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
@@ -77,6 +77,7 @@ class CarInterface(CarInterfaceBase):
       if p.get_bool("TorqueInterceptorEnabled"): # Torque Interceptor Installed
         ret.flags |= MazdaFlags.TORQUE_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.TORQUE_INTERCEPTOR.value
+        ret.steerAtStandstill = True
       if p.get_bool("RadarInterceptorEnabled"): # Radar Interceptor Installed
         ret.flags |= MazdaFlags.RADAR_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.RADAR_INTERCEPTOR.value
@@ -111,5 +112,6 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiV = [0.1, 0.1]
       ret.startingState = True
       ret.steerActuatorDelay = 0.335
+      ret.steerAtStandstill = True
 
     return ret
