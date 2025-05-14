@@ -559,8 +559,10 @@ struct CarParams {
     friction @3 :Float32;
     kf @4 :Float32;
     steeringAngleDeadzoneDeg @5 :Float32;
-    latAccelFactor @6 :Float32;
-    latAccelOffset @7 :Float32;
+    sigmoidSharpness @8 :Float32;   # a
+    sigmoidTorqueGain @9 :Float32;  # b
+    latAccelFactor @6 :Float32;     # c
+    latAccelOffset @7 :Float32;     # d
   }
 
   struct LongitudinalPIDTuning {
