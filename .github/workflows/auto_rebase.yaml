@@ -1,0 +1,17 @@
+name: Rebase On Trigger
+
+on:
+  repository_dispatch:
+    types: [rebase]
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: imba-tjd/rebase-upstream-action@master
+        with:
+          upstream: commaai/opendbc
+          branch: master
