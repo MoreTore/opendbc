@@ -178,27 +178,19 @@ class CarState(CarStateBase):
         cp_cam.vl["WHEEL_SPEEDS"]["RR"],
     )
 
-    ret.vEgoRaw = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.
-    ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw) # Doesn't match cluster speed exactly
-
-    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(100, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
-                                                                      cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
-
-    #self.shifting = cp_cam.vl["GEAR"]["SHIFT"]
-    #self.torque_converter_lock = cp_cam.vl["GEAR"]["TORQUE_CONVERTER_LOCK"]
-
     ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
     ret.steeringRateDeg = cp.vl["STEER"]["STEER_RATE"]
-
     ret.steeringTorque = cp_body.vl["TI_FEEDBACK"]["STEER_TORQUE_SENSOR"]
-
-    unit_conversion = CV.MPH_TO_MS if cp.vl["SYSTEM_SETTINGS"]["IMPERIAL_UNIT"] else CV.KPH_TO_MS
-
     ret.steeringPressed = abs(ret.steeringTorque) > self.params.STEER_DRIVER_ALLOWANCE
+
     if self.CP.flags & MazdaFlags.MANUAL_TRANSMISSION:
       can_gear = int(cp_cam.vl["MANUAL_GEAR"]["GEAR"])
     else:
       can_gear = int(cp_cam.vl["GEAR"]["GEAR"])
+
+    ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(100, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
+                                                                      cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
+
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
     ret.gasPressed = cp_cam.vl["ENGINE_DATA"]["PEDAL_GAS"] > 0
     ret.seatbeltUnlatched = False # Cruise will not engage if seatbelt is unlatched (handled by car)
@@ -208,6 +200,7 @@ class CarState(CarStateBase):
     ret.steerFaultPermanent = False # TODO locate signal. Car shows light on dash if there is a fault
     ret.steerFaultTemporary = False # TODO locate signal. Car shows light on dash if there is a fault
 
+    unit_conversion = CV.MPH_TO_MS if cp.vl["SYSTEM_SETTINGS"]["IMPERIAL_UNIT"] else CV.KPH_TO_MS
     ret.standstill = cp_cam.vl["SPEED"]["SPEED"] * unit_conversion < 0.1
     ret.cruiseState.speed = cp.vl["CRUZE_STATE"]["CRZ_SPEED"] * unit_conversion
     ret.cruiseState.enabled = (cp.vl["CRUZE_STATE"]["CRZ_STATE"] >= 2)
