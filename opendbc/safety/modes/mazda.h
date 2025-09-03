@@ -14,7 +14,6 @@
 #define TI_STEER_TORQUE     0x24AU
 // Radar
 #define MAZDA_CRZ_INFO      0x21BU
-#define MAZDA_CRZ_CTRL      0x21CU
 #define MAZDA_RADAR_361     0x361U
 #define MAZDA_RADAR_362     0x362U
 #define MAZDA_RADAR_363     0x363U
@@ -220,7 +219,37 @@ static safety_config mazda_init(uint16_t param) {
     {.msg = {{MAZDA_2019_SPEED,         2, 8, 30U, .ignore_checksum = true, .ignore_counter = true, .ignore_quality_flag = true}, { 0 }, { 0 }}},
     {.msg = {{MAZDA_2019_STEER_TORQUE,  1, 8, 50U, .ignore_checksum = true, .ignore_counter = true, .ignore_quality_flag = true}, { 0 }, { 0 }}},
   };
-  return BUILD_SAFETY_CFG(mazda_rx_checks, MAZDA_TX_MSGS);
+
+  // Check flags
+  gen1 = GET_FLAG(param, FLAG_GEN1);
+  gen2 = GET_FLAG(param, FLAG_GEN2);
+  radar_interceptor = GET_FLAG(param, FLAG_RADAR_INTERCEPTOR);
+  torque_interceptor = GET_FLAG(param, FLAG_TORQUE_INTERCEPTOR);
+  no_fsc = GET_FLAG(param, FLAG_NO_FSC);
+  no_mrcc = GET_FLAG(param, FLAG_NO_MRCC);
+
+  safety_config ret = BUILD_SAFETY_CFG(mazda_rx_checks, MAZDA_TX_MSGS);
+
+  if (gen1) {
+    SET_RX_CHECKS(mazda_rx_checks, ret);
+    if (radar_interceptor && torque_interceptor) {
+      SET_RX_CHECKS(mazda_ti_rx_checks, ret);
+      SET_TX_MSGS(MAZDA_TI_RI_TX_MSGS, ret);
+    } else if (radar_interceptor) {
+      SET_TX_MSGS(MAZDA_RI_TX_MSGS, ret);
+    } else if (torque_interceptor) {
+      SET_RX_CHECKS(mazda_ti_rx_checks, ret);
+      SET_TX_MSGS(MAZDA_TI_TX_MSGS, ret);
+    } else {
+      SET_TX_MSGS(MAZDA_TX_MSGS, ret);
+    }
+  }
+
+  if (gen2) {
+    ret = BUILD_SAFETY_CFG(mazda_2019_rx_checks, MAZDA_2019_TX_MSGS);
+  }
+
+  return ret;
 }
 
 const safety_hooks mazda_hooks = {
