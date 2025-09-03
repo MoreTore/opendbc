@@ -23,10 +23,7 @@ class CarController(CarControllerBase):
     self.hold_delay = Timer(.5) # delay before we start holding as to not hit the brakes too hard
     self.resume_timer = Timer(0.5)
     self.cancel_delay = Timer(0.07) # 70ms delay to try to avoid a race condition with stock system
-    self.acc_filter = FirstOrderFilter(0.0, .1, DT_CTRL, initialized=False)
-    self.filtered_acc_last = 0
-    self.long_active_last = False
-    self.params = Params()
+
 
   def update(self, CC, CS, now_nanos):
     can_sends = []
@@ -83,48 +80,14 @@ class CarController(CarControllerBase):
 
           raw_acc_output = CC.actuators.accel * 1150
           raw_acc_output = max(-1000, min(raw_acc_output, 1000))
-
-          if self.params.get_bool("BlendedACC"):
-            # if self.params_memory.get_int("CEStatus"):
-            #   self.acc_filter.update_alpha(abs(raw_acc_output-self.filtered_acc_last)/1000)
-            #   filtered_acc_output = int(self.acc_filter.update(raw_acc_output))
-            # else:
-            # we want to use the stock value in this case but we need a smooth transition.
-            self.acc_filter.update_alpha(abs(CS.crz_info["ACCEL_CMD"]-self.filtered_acc_last)/1000)
-            filtered_acc_output = int(self.acc_filter.update(CS.crz_info["ACCEL_CMD"]))
-
-            CS.crz_info["ACCEL_CMD"] = int(filtered_acc_output)
-            self.filtered_acc_last = filtered_acc_output
-          else:
-            CS.crz_info["ACCEL_CMD"] = raw_acc_output
+          CS.crz_info["ACCEL_CMD"] = raw_acc_output
 
         if self.frame % 2 == 0:
           can_sends.extend(mazdacan.create_radar_command(self.packer, self.frame, CC.longActive, CS, hold))
 
     elif self.CP.flags & MazdaFlags.GEN2:
-      raw_acc_output = (CC.actuators.accel * 200) + 2000
       if CC.longActive and self.CP.openpilotLongitudinalControl:
-        if self.params.get_bool("BlendedACC"):
-          if not self.long_active_last:
-              # reset the filter when we start ACC
-              self.acc_filter.initialized = False
-
-          # if self.params_memory.get_int("CEStatus"): # Frogpilot
-          #   self.acc_filter.update_alpha(abs(raw_acc_output-self.filtered_acc_last)/1000)
-          #   filtered_acc_output = int(self.acc_filter.update(raw_acc_output))
-          # else:
-          # we want to use the stock value in this case but we need a smooth transition.
-          self.acc_filter.update_alpha(abs(CS.acc["ACCEL_CMD"]-self.filtered_acc_last)/1000)
-          filtered_acc_output = int(self.acc_filter.update(CS.acc["ACCEL_CMD"]))
-
-          acc_output = filtered_acc_output
-          self.filtered_acc_last = filtered_acc_output
-        else:
-          acc_output = raw_acc_output
-
-        CS.acc["ACCEL_CMD"] = acc_output
-
-      self.long_active_last = CC.longActive
+        CS.acc["ACCEL_CMD"] = (CC.actuators.accel * 200) + 2000
 
       resume = False
       hold = False
