@@ -218,18 +218,18 @@ def create_acc_cmd(packer, values, hold, resume):
 
   return packer.make_can_msg(msg_name, bus, values)
 
-def mazda2019_checksum(address, sig, d):
+def mazda2019_checksum(address: int, sig, d: bytearray) -> int:
   checksum = 0
   if address == 0x220:
     checksum = 0x2a
   if address == 0x249:
     checksum = 0x53
-  # Simple XOR over the payload, except for the byte where the checksum lives.
+  # Simple sum over the payload, except for the byte where the checksum lives.
   for i in range(7):
     checksum += d[i]
-  return checksum
+  return checksum % 256
 
-def mazda2017_checksum(address, sig, d):
+def mazda2017_checksum(address: int, sig, d: bytearray) -> int:
   sum_val = 0
   if d[5] & 0x5:
     sum_val = 0xFC

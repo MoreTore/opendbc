@@ -171,7 +171,7 @@ class CarState(CarStateBase):
     cp_body = can_parsers[Bus.body]
     ret = structs.CarState()
 
-    ret.wheelSpeeds = self.get_wheel_speeds(
+    self.parse_wheel_speeds(ret,
         cp_cam.vl["WHEEL_SPEEDS"]["FL"],
         cp_cam.vl["WHEEL_SPEEDS"]["FR"],
         cp_cam.vl["WHEEL_SPEEDS"]["RL"],
@@ -184,7 +184,6 @@ class CarState(CarStateBase):
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(100, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
                                                                       cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
 
-    ret.engineRpm = cp_cam.vl["ENGINE_DATA"]["RPM"]
     #self.shifting = cp_cam.vl["GEAR"]["SHIFT"]
     #self.torque_converter_lock = cp_cam.vl["GEAR"]["TORQUE_CONVERTER_LOCK"]
 
@@ -192,7 +191,6 @@ class CarState(CarStateBase):
     ret.steeringRateDeg = cp.vl["STEER"]["STEER_RATE"]
 
     ret.steeringTorque = cp_body.vl["TI_FEEDBACK"]["STEER_TORQUE_SENSOR"]
-    ret.gas = cp_cam.vl["ENGINE_DATA"]["PEDAL_GAS"]
 
     unit_conversion = CV.MPH_TO_MS if cp.vl["SYSTEM_SETTINGS"]["IMPERIAL_UNIT"] else CV.KPH_TO_MS
 
@@ -202,7 +200,7 @@ class CarState(CarStateBase):
     else:
       can_gear = int(cp_cam.vl["GEAR"]["GEAR"])
     ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(can_gear, None))
-    ret.gasPressed = ret.gas > 0
+    ret.gasPressed = cp_cam.vl["ENGINE_DATA"]["PEDAL_GAS"] > 0
     ret.seatbeltUnlatched = False # Cruise will not engage if seatbelt is unlatched (handled by car)
     ret.doorOpen = False # Cruise will not engage if door is open (handled by car)
     ret.brakePressed = cp.vl["BRAKE_PEDAL"]["BRAKE_PRESSED"] == 1
