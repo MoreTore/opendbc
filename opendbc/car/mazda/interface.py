@@ -1,50 +1,64 @@
 #!/usr/bin/env python3
-from math import exp
+from math import exp, fabs
+import numpy as np
 
 from opendbc.car import get_safety_config, structs
 from opendbc.car.common.conversions import Conversions as CV
-from opendbc.car.interfaces import CarInterfaceBase, LatControlInputs, FRICTION_THRESHOLD, TorqueFromLateralAccelCallbackType
+from opendbc.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, LateralAccelFromTorqueCallbackType
 from opendbc.car.mazda.carcontroller import CarController
 from opendbc.car.mazda.carstate import CarState
 from opendbc.car.mazda.values import CAR, LKAS_LIMITS, MazdaSafetyFlags, MazdaFlags, GEN1, GEN2
 from openpilot.common.params import Params
-from opendbc.car import get_friction
 
 NON_LINEAR_TORQUE_PARAMS = {
   CAR.MAZDA_3_2019: (3.8818, 0.6873, 0.0999, 0.3605),
+  CAR.MAZDA_CX_30: (3.8818, 0.6873, 0.0999, 0.3605),
+  CAR.MAZDA_CX_50: (3.8818, 0.6873, 0.0999, 0.3605),
 }
 
 class CarInterface(CarInterfaceBase):
   CarState = CarState
   CarController = CarController
 
-  def torque_from_lateral_accel_siglin(self, latcontrol_inputs: LatControlInputs, torque_params: structs.CarParams.LateralTorqueTuning, lateral_accel_error: float,
-                                      lateral_accel_deadzone: float, friction_compensation: bool, gravity_adjusted: bool) -> float:
-    friction = get_friction(lateral_accel_error, lateral_accel_deadzone, FRICTION_THRESHOLD, torque_params, friction_compensation)
+  def get_lataccel_torque_siglin(self) -> float:
 
-    def sig(val):
-      # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick
-      if val >= 0:
-        return 1 / (1 + exp(-val)) - 0.5
-      else:
-        z = exp(val)
-        return z / (1 + z) - 0.5
+    def torque_from_lateral_accel_siglin_func(lateral_acceleration: float) -> float:
+      # The "lat_accel vs torque" relationship is assumed to be the sum of "sigmoid + linear" curves
+      # An important thing to consider is that the slope at 0 should be > 0 (ideally >1)
+      # This has big effect on the stability about 0 (noise when going straight)
+      non_linear_torque_params = NON_LINEAR_TORQUE_PARAMS.get(self.CP.carFingerprint)
+      assert non_linear_torque_params, "The params are not defined"
+      a, b, c, _ = non_linear_torque_params
+      sig_input = a * lateral_acceleration
+      sig = np.sign(sig_input) * (1 / (1 + exp(-fabs(sig_input))) - 0.5)
+      steer_torque = (sig * b) + (lateral_acceleration * c)
+      return float(steer_torque)
 
-    # The "lat_accel vs torque" relationship is assumed to be the sum of "sigmoid + linear" curves
-    # An important thing to consider is that the slope at 0 should be > 0 (ideally >1)
-    # This has big effect on the stability about 0 (noise when going straight)
-    # ToDo: To generalize to other GMs, explore tanh function as the nonlinear
-    non_linear_torque_params = NON_LINEAR_TORQUE_PARAMS.get(self.CP.carFingerprint)
-    assert non_linear_torque_params, "The params are not defined"
-    a, b, c, _ = non_linear_torque_params
-    steer_torque = (sig(latcontrol_inputs.lateral_acceleration * a) * b) + (latcontrol_inputs.lateral_acceleration * c)
-    return float(steer_torque) + friction
+    lataccel_values = np.arange(-5.0, 5.0, 0.01)
+    torque_values = [torque_from_lateral_accel_siglin_func(x) for x in lataccel_values]
+    assert min(torque_values) < -1 and max(torque_values) > 1, "The torque values should cover the range [-1, 1]"
+    return torque_values, lataccel_values
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
     if self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
-      return self.torque_from_lateral_accel_siglin
+      torque_values, lataccel_values = self.get_lataccel_torque_siglin()
+
+      def torque_from_lateral_accel_siglin(lateral_acceleration: float, torque_params: structs.CarParams.LateralTorqueTuning):
+        return np.interp(lateral_acceleration, lataccel_values, torque_values)
+      return torque_from_lateral_accel_siglin
     else:
       return self.torque_from_lateral_accel_linear
+
+  def lateral_accel_from_torque(self) -> LateralAccelFromTorqueCallbackType:
+    if self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
+      torque_values, lataccel_values = self.get_lataccel_torque_siglin()
+
+      def lateral_accel_from_torque_siglin(torque: float, torque_params: structs.CarParams.LateralTorqueTuning):
+        return np.interp(torque, torque_values, lataccel_values)
+      return lateral_accel_from_torque_siglin
+    else:
+      return self.lateral_accel_from_torque_linear
+
 
   @staticmethod
   def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, alpha_long, is_release, docs) -> structs.CarParams:
