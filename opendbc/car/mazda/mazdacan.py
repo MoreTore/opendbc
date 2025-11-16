@@ -1,10 +1,10 @@
-from opendbc.car.mazda.values import Buttons, MazdaFlags
+from opendbc.car.mazda.values import Buttons, MazdaSafetyFlags
 from numpy import clip
 
 def create_steering_control(packer, CP, frame, apply_torque, lkas):
   msgs = []
-  if CP.flags & MazdaFlags.GEN1:
-    if not CP.flags & MazdaFlags.NO_FSC:
+  if CP.flags & MazdaSafetyFlags.GEN1:
+    if not CP.flags & MazdaSafetyFlags.NO_FSC:
       tmp = apply_torque + 2048
 
       lo = tmp & 0xFF
@@ -60,7 +60,7 @@ def create_steering_control(packer, CP, frame, apply_torque, lkas):
       }
       msgs.append(packer.make_can_msg("CAM_LKAS", 0, values))
 
-    if CP.flags & MazdaFlags.TORQUE_INTERCEPTOR:
+    if CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR:
       values = {
           "LKAS_REQUEST"     : apply_torque,
           "CHKSUM"           : apply_torque,
@@ -68,7 +68,7 @@ def create_steering_control(packer, CP, frame, apply_torque, lkas):
       }
       msgs.append(packer.make_can_msg("CAM_LKAS2", 1, values))
 
-  elif CP.flags & MazdaFlags.GEN2:
+  elif CP.flags & (MazdaSafetyFlags.GEN2 | MazdaSafetyFlags.GEN3) :
     bus = 1
     sig_name = "EPS_LKAS"
     values = {
@@ -110,7 +110,7 @@ def create_button_cmd(packer, CP, counter, button):
   can = int(button == Buttons.CANCEL)
   res = int(button == Buttons.RESUME)
 
-  if CP.flags & MazdaFlags.GEN1:
+  if CP.flags & MazdaSafetyFlags.GEN1:
     values = {
       "CAN_OFF": can,
       "CAN_OFF_INV": (can + 1) % 2,

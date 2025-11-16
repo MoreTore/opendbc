@@ -4,12 +4,12 @@ import math
 from opendbc.can.parser import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import RadarInterfaceBase
-from opendbc.car.mazda.values import DBC, MazdaFlags
+from opendbc.car.mazda.values import DBC, MazdaSafetyFlags
 
 def get_radar_can_parser(CP):
   if Bus.radar not in DBC[CP.carFingerprint]:
     return None
-  if not CP.flags & MazdaFlags.RADAR_INTERCEPTOR:
+  if not CP.flags & MazdaSafetyFlags.RADAR_INTERCEPTOR:
     return None
 
   messages = [(f"RADAR_TRACK_{addr}", 10) for addr in range(361,367)]

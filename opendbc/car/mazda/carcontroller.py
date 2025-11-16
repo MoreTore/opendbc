@@ -3,7 +3,7 @@ from opendbc.car import Bus, structs
 from opendbc.car.lateral import apply_driver_steer_torque_limits
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.mazda import mazdacan
-from opendbc.car.mazda.values import CarControllerParams, Buttons, MazdaFlags
+from opendbc.car.mazda.values import CarControllerParams, Buttons, MazdaSafetyFlags
 from openpilot.common.realtime import ControlsTimer as Timer, DT_CTRL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
@@ -36,7 +36,7 @@ class CarController(CarControllerBase):
       new_torque = int(round(CC.actuators.torque * self.ccp.STEER_MAX))
       apply_torque = apply_driver_steer_torque_limits(new_torque, self.apply_torque_last,
                                                       CS.out.steeringTorque, self.ccp)
-      if self.CP.flags & MazdaFlags.TORQUE_INTERCEPTOR:
+      if self.CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR:
         if CS.ti_lkas_allowed:
           ti_new_torque = int(round(CC.actuators.steer * self.ccp.STEER_MAX))
           ti_apply_torque = apply_driver_steer_torque_limits(ti_new_torque, self.ti_apply_steer_last,
@@ -45,7 +45,7 @@ class CarController(CarControllerBase):
     self.apply_torque_last = apply_torque
     self.ti_apply_torque_last = ti_apply_torque
 
-    if self.CP.flags & MazdaFlags.GEN1:
+    if self.CP.flags & MazdaSafetyFlags.GEN1:
       if CC.cruiseControl.cancel:
         # If brake is pressed, let us wait >70ms before trying to disable crz to avoid
         # a race condition with the stock system, where the second cancel from openpilot
@@ -85,7 +85,7 @@ class CarController(CarControllerBase):
         if self.frame % 2 == 0:
           can_sends.extend(mazdacan.create_radar_command(self.packer, self.frame, CC.longActive, CS, hold))
 
-    elif self.CP.flags & MazdaFlags.GEN2:
+    elif self.CP.flags & MazdaSafetyFlags.GEN2:
       if CC.longActive and self.CP.openpilotLongitudinalControl:
         CS.acc["ACCEL_CMD"] = (CC.actuators.accel * 200) + 2000
 

@@ -3,7 +3,7 @@ from opendbc.can import CANDefine, CANParser
 from opendbc.car import Bus, create_button_events, structs
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarStateBase
-from opendbc.car.mazda.values import DBC, LKAS_LIMITS, MazdaFlags, TI_STATE, CarControllerParams
+from opendbc.car.mazda.values import DBC, LKAS_LIMITS, MazdaSafetyFlags, TI_STATE, CarControllerParams
 
 ButtonType = structs.CarState.ButtonEvent.Type
 
@@ -14,7 +14,7 @@ class CarState(CarStateBase):
 
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
     self.shifter_values = can_define.dv["GEAR"]["GEAR"]
-    if CP.flags & MazdaFlags.MANUAL_TRANSMISSION:
+    if CP.flags & MazdaSafetyFlags.MANUAL_TRANSMISSION:
       self.shifter_values = can_define.dv["MANUAL_GEAR"]["GEAR"]
 
     self.crz_btns_counter = 0
@@ -32,11 +32,10 @@ class CarState(CarStateBase):
     self.ti_error = 0
     self.ti_lkas_allowed = False
 
-    self.shifting = False
-    self.torque_converter_lock = True
+    self._prev_steering_angle = 0
 
   def update(self, can_parsers) -> structs.CarState:
-    if self.CP.flags & MazdaFlags.GEN2:
+    if self.CP.flags & (MazdaSafetyFlags.GEN2 | MazdaSafetyFlags.GEN3):
       return self.update_gen2(can_parsers)
 
     cp = can_parsers[Bus.pt]
@@ -68,7 +67,7 @@ class CarState(CarStateBase):
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_lamp(40, cp.vl["BLINK_INFO"]["LEFT_BLINK"] == 1,
                                                                       cp.vl["BLINK_INFO"]["RIGHT_BLINK"] == 1)
 
-    if self.CP.flags & MazdaFlags.TORQUE_INTERCEPTOR:
+    if self.CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR:
       ret.steeringTorque = cp_body.vl["TI_FEEDBACK"]["TI_TORQUE_SENSOR"]
 
       self.ti_version = cp_body.vl["TI_FEEDBACK"]["VERSION_NUMBER"]
@@ -118,13 +117,13 @@ class CarState(CarStateBase):
     ret.cruiseState.standstill = ret.standstill
     ret.cruiseState.speed = cp.vl["CRZ_EVENTS"]["CRZ_SPEED"] * CV.KPH_TO_MS
 
-    if self.CP.flags & MazdaFlags.RADAR_INTERCEPTOR:
+    if self.CP.flags & MazdaSafetyFlags.RADAR_INTERCEPTOR:
       self.crz_info = copy.copy(cp_cam.vl["CRZ_INFO"])
       self.crz_cntr = copy.copy(cp_cam.vl["CRZ_CTRL"])
       self.cp_cam = cp_cam
       ret.cruiseState.enabled = cp.vl["PEDALS"]["ACC_ACTIVE"] == 1
       ret.cruiseState.available = cp.vl["PEDALS"]["CRZ_AVAILABLE"] == 1
-    elif self.CP.flags & MazdaFlags.NO_MRCC:
+    elif self.CP.flags & MazdaSafetyFlags.NO_MRCC:
       ret.cruiseState.enabled = cp.vl["PEDALS"]["ACC_ACTIVE"] == 1
       ret.cruiseState.available = cp.vl["PEDALS"]["CRZ_AVAILABLE"] == 1
     else:
@@ -133,7 +132,7 @@ class CarState(CarStateBase):
 
     # stock lkas should be on
     # TODO: is this needed?
-    if not self.CP.flags & MazdaFlags.TORQUE_INTERCEPTOR:
+    if not self.CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR:
       if ret.cruiseState.enabled:
         if not self.lkas_allowed_speed and self.acc_active_last:
           self.low_speed_alert = True
@@ -151,12 +150,12 @@ class CarState(CarStateBase):
     self.crz_btns_counter = cp.vl["CRZ_BTNS"]["CTR"]
 
     # camera signals
-    if not self.CP.flags & MazdaFlags.NO_FSC:
+    if not self.CP.flags & MazdaSafetyFlags.NO_FSC:
       ret.invalidLkasSetting = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0
-      self.lkas_disabled = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0 if not self.CP.flags & MazdaFlags.TORQUE_INTERCEPTOR else False
+      self.lkas_disabled = cp_cam.vl["CAM_LANEINFO"]["LANE_LINES"] == 0 if not self.CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR else False
       self.cam_lkas = cp_cam.vl["CAM_LKAS"]
       self.cam_laneinfo = cp_cam.vl["CAM_LANEINFO"]
-      ret.steerFaultPermanent = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1 if not self.CP.flags & MazdaFlags.TORQUE_INTERCEPTOR else False
+      ret.steerFaultPermanent = cp_cam.vl["CAM_LKAS"]["ERR_BIT_1"] == 1 if not self.CP.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR else False
     self.cp_cam = cp_cam
     self.cp = cp
 
@@ -178,12 +177,10 @@ class CarState(CarStateBase):
         cp_cam.vl["WHEEL_SPEEDS"]["RR"],
     )
 
-    ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
-    ret.steeringRateDeg = cp.vl["STEER"]["STEER_RATE"]
     ret.steeringTorque = cp_body.vl["TI_FEEDBACK"]["STEER_TORQUE_SENSOR"]
     ret.steeringPressed = abs(ret.steeringTorque) > self.params.STEER_DRIVER_ALLOWANCE
 
-    if self.CP.flags & MazdaFlags.MANUAL_TRANSMISSION:
+    if self.CP.flags & MazdaSafetyFlags.MANUAL_TRANSMISSION:
       can_gear = int(cp_cam.vl["MANUAL_GEAR"]["GEAR"])
     else:
       can_gear = int(cp_cam.vl["GEAR"]["GEAR"])
@@ -202,9 +199,18 @@ class CarState(CarStateBase):
 
     unit_conversion = CV.MPH_TO_MS if cp.vl["SYSTEM_SETTINGS"]["IMPERIAL_UNIT"] else CV.KPH_TO_MS
     ret.standstill = cp_cam.vl["SPEED"]["SPEED"] * unit_conversion < 0.1
-    ret.cruiseState.speed = cp.vl["CRUZE_STATE"]["CRZ_SPEED"] * unit_conversion
-    ret.cruiseState.enabled = (cp.vl["CRUZE_STATE"]["CRZ_STATE"] >= 2)
-    ret.cruiseState.available = (cp.vl["CRUZE_STATE"]["CRZ_STATE"] != 0)
+    if self.CP.flags & MazdaSafetyFlags.GEN2:
+      ret.steeringAngleDeg = cp_cam.vl["STEER"]["STEER_ANGLE"]
+      ret.cruiseState.speed = cp.vl["CRUZE_STATE"]["CRZ_SPEED"] * unit_conversion
+      ret.cruiseState.enabled = (cp.vl["CRUZE_STATE"]["CRZ_STATE"] >= 2)
+      ret.cruiseState.available = (cp.vl["CRUZE_STATE"]["CRZ_STATE"] != 0)
+    else:
+      ret.steeringAngleDeg = cp.vl["STEER"]["STEER_ANGLE"]
+      ret.cruiseState.speed = cp_body.vl["CRUZE_STATE"]["CRZ_SPEED"] * unit_conversion
+      ret.cruiseState.enabled = (cp_body.vl["CRUZE_STATE"]["CRZ_STATE"] >= 3)
+      ret.cruiseState.available = (cp_body.vl["CRUZE_STATE"]["CRZ_STATE"] >= 2)
+    ret.steeringRateDeg = (ret.steeringAngleDeg - self._prev_steering_angle) / DT_CTRL
+    self._prev_steering_angle = ret.steeringAngleDeg
     ret.cruiseState.standstill = ret.standstill if not self.CP.openpilotLongitudinalControl else False
 
     self.cp = cp

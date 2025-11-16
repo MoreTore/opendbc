@@ -7,12 +7,13 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, LateralAccelFromTorqueCallbackType
 from opendbc.car.mazda.carcontroller import CarController
 from opendbc.car.mazda.carstate import CarState
-from opendbc.car.mazda.values import CAR, LKAS_LIMITS, MazdaSafetyFlags, MazdaFlags, GEN1, GEN2
+from opendbc.car.mazda.values import CAR, LKAS_LIMITS, MazdaSafetyFlags, MazdaSafetyFlags, GEN1, GEN2, GEN3
 from openpilot.common.params import Params
 
 NON_LINEAR_TORQUE_PARAMS = {
   CAR.MAZDA_3_2019: (3.650, 1.0, 0.13, 0.3605),
   CAR.MAZDA_CX_30: (2.082, 1.444, 0.1, 0.238),
+  CAR.MAZDA_CX_30_2023: (4.68689, 0.79999, 0.18244, 0.38763),
   CAR.MAZDA_CX_50: (3.8818, 0.6873, 0.0999, 0.3605),
 }
 
@@ -76,13 +77,13 @@ class CarInterface(CarInterfaceBase):
 
     CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
-    if candidate not in (CAR.MAZDA_CX5_2022, CAR.MAZDA_3_2019, CAR.MAZDA_CX_30, CAR.MAZDA_CX_50) and not ret.flags & MazdaFlags.TORQUE_INTERCEPTOR:
+    if candidate not in (CAR.MAZDA_CX5_2022, CAR.MAZDA_3_2019, CAR.MAZDA_CX_30, CAR.MAZDA_CX_50, CAR.MAZDA_3_2023, CAR.MAZDA_CX_30_2023) and not ret.flags & MazdaSafetyFlags.TORQUE_INTERCEPTOR:
       ret.minSteerSpeed = LKAS_LIMITS.DISABLE_SPEED * CV.KPH_TO_MS
 
     ret.centerToFront = ret.wheelbase * 0.41
 
     if p.get_bool("ManualTransmission"):
-      ret.flags |= MazdaFlags.MANUAL_TRANSMISSION.value
+      ret.flags |= MazdaSafetyFlags.MANUAL_TRANSMISSION.value
       ret.transmissionType = structs.CarParams.TransmissionType.manual
     else:
       ret.transmissionType = structs.CarParams.TransmissionType.automatic
@@ -90,10 +91,10 @@ class CarInterface(CarInterfaceBase):
     if candidate in GEN1:
       ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.GEN1.value
       if p.get_bool("TorqueInterceptorEnabled"): # Torque Interceptor Installed
-        ret.flags |= MazdaFlags.TORQUE_INTERCEPTOR.value
+        ret.flags |= MazdaSafetyFlags.TORQUE_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.TORQUE_INTERCEPTOR.value
       if p.get_bool("RadarInterceptorEnabled"): # Radar Interceptor Installed
-        ret.flags |= MazdaFlags.RADAR_INTERCEPTOR.value
+        ret.flags |= MazdaSafetyFlags.RADAR_INTERCEPTOR.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.RADAR_INTERCEPTOR.value
         ret.alphaLongitudinalAvailable = alpha_long
         ret.openpilotLongitudinalControl = True
@@ -104,10 +105,10 @@ class CarInterface(CarInterfaceBase):
         ret.longitudinalTuning.kiBP = [0., 5., 20., 30.]
         ret.longitudinalTuning.kiV = [0.36, 0.23, 0.17, 0.1]
       if p.get_bool("NoMRCC"): # No Mazda Radar Cruise Control; Missing CRZ_CTRL signal
-        ret.flags |= MazdaFlags.NO_MRCC.value
+        ret.flags |= MazdaSafetyFlags.NO_MRCC.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.NO_MRCC.value
       if p.get_bool("NoFSC"):  # No Front Sensing Camera
-        ret.flags |= MazdaFlags.NO_FSC.value
+        ret.flags |= MazdaSafetyFlags.NO_FSC.value
         ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.NO_FSC.value
 
       ret.steerActuatorDelay = 0.1
@@ -127,4 +128,10 @@ class CarInterface(CarInterfaceBase):
       ret.startingState = True
       ret.steerActuatorDelay = 0.335
 
+    if candidate in GEN3:
+      ret.safetyConfigs[0].safetyParam |= MazdaSafetyFlags.GEN3.value
+      ret.experimentalLongitudinalAvailable = False
+      ret.openpilotLongitudinalControl = False
+      if p.get_bool("ManualTransmission"):
+        ret.flags |= MazdaSafetyFlags.MANUAL_TRANSMISSION.value
     return ret
