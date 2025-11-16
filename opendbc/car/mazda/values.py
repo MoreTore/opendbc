@@ -75,6 +75,8 @@ class MazdaPlatformConfig(PlatformConfig):
       self.dbc_dict = {Bus.pt: 'mazda_2019'}
     elif self.flags & MazdaSafetyFlags.GEN1 and self.flags & MazdaSafetyFlags.RADAR_INTERCEPTOR:
       self.dbc_dict = {Bus.pt: 'mazda_2017', Bus.radar: 'mazda_radar'}
+    elif self.flags & MazdaSafetyFlags.GEN3:
+      self.dbc_dict = {Bus.pt: 'mazda_2023'}
 
 
 class CAR(Platforms):
