@@ -43,7 +43,7 @@
 // param flag masks
 const int FLAG_GEN1 = 1;
 const int FLAG_GEN2 = 2;
-const int FLAG_GEN3 = 4
+const int FLAG_GEN3 = 4;
 const int FLAG_TORQUE_INTERCEPTOR = 8;
 const int FLAG_RADAR_INTERCEPTOR = 16;
 const int FLAG_NO_FSC = 32;
