@@ -28,7 +28,7 @@ class CarControllerParams:
       self.TI_STEER_DRIVER_MULTIPLIER = 40     # weight driver torque
       self.TI_STEER_DRIVER_FACTOR = 1         # from dbc
       self.TI_STEER_ERROR_MAX = 350           # max delta between torque cmd and torque motor
-    if CP.flags & MazdaSafetyFlags.GEN2:
+    if CP.flags & (MazdaSafetyFlags.GEN2 | MazdaSafetyFlags.GEN3):
       self.STEER_MAX = 8000
       self.STEER_DELTA_UP = 45              # torque increase per refresh
       self.STEER_DELTA_DOWN = 80            # torque decrease per refresh
