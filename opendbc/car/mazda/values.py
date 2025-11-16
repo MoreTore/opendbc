@@ -64,6 +64,7 @@ class MazdaSafetyFlags(IntFlag):
   RADAR_INTERCEPTOR = 16
   NO_FSC = 32
   NO_MRCC = 64
+  MANUAL_TRANSMISSION = 128
 
 
 @dataclass
