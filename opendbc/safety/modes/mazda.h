@@ -155,7 +155,7 @@ static void mazda_rx_hook(const CANPacket_t *msg) {
     }
     if (gen3) {
       if (msg->addr == MAZDA_2019_GAS) {
-        gas_pressed = (msg->data[4] || (msg->data[5] & 0xC0U)));
+        gas_pressed = (msg->data[4] || (msg->data[5] & 0xC0U));
       }
     }
   }
